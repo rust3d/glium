@@ -16,15 +16,19 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use GlObject;
+use ProgramExt;
 use Handle;
 
 use program::{COMPILER_GLOBAL_LOCK, IntoProgramCreationInput, ProgramCreationInput, Binary};
+use program::uniforms_storage::UniformsStorage;
 
 use program::reflection::{Uniform, UniformBlock};
 use program::reflection::{Attribute, TransformFeedbackVarying, TransformFeedbackMode};
 use program::reflection::{reflect_uniforms, reflect_attributes, reflect_uniform_blocks};
 use program::reflection::{reflect_transform_feedback};
 use program::shader::build_shader;
+
+use uniforms::UniformValue;
 
 /// Error that can be triggered when creating a `Program`.
 #[derive(Clone, Debug)]
@@ -91,9 +95,10 @@ impl Error for ProgramCreationError {
 pub struct Program {
     context: Rc<Context>,
     id: Handle,
-    uniforms: HashMap<String, Uniform>,
-    uniform_blocks: HashMap<String, UniformBlock>,
-    attributes: HashMap<String, Attribute>,
+    uniform_values: UniformsStorage,
+    uniforms: HashMap<String, Uniform, DefaultState<FnvHasher>>,
+    uniform_blocks: HashMap<String, UniformBlock, DefaultState<FnvHasher>>,
+    attributes: HashMap<String, Attribute, DefaultState<FnvHasher>>,
     frag_data_locations: RefCell<HashMap<String, Option<u32>>>,
     varyings: Option<(Vec<TransformFeedbackVarying>, TransformFeedbackMode)>,
     has_tessellation_shaders: bool,
@@ -317,6 +322,7 @@ impl Program {
             context: facade.get_context().clone(),
             id: id,
             uniforms: uniforms,
+            uniform_values: UniformsStorage::new(),
             uniform_blocks: blocks,
             attributes: attributes,
             frag_data_locations: RefCell::new(HashMap::new()),
@@ -371,6 +377,7 @@ impl Program {
             context: facade.get_context().clone(),
             id: id,
             uniforms: uniforms,
+            uniform_values: UniformsStorage::new(),
             uniform_blocks: blocks,
             attributes: attributes,
             frag_data_locations: RefCell::new(HashMap::new()),
@@ -525,6 +532,12 @@ impl GlObject for Program {
     type Id = Handle;
     fn get_id(&self) -> Handle {
         self.id
+    }
+}
+
+impl ProgramExt for Program {
+    fn compare_uniform_state(&self, uniform_location: u32, value: &UniformValue) -> bool {
+        self.uniform_values.compare_and_store(uniform_location, value)
     }
 }
 

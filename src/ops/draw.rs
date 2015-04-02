@@ -3,6 +3,7 @@ use std::sync::mpsc::Sender;
 use std::collections::HashMap;
 
 use BufferExt;
+use ProgramExt;
 use DrawError;
 use Handle;
 
@@ -189,7 +190,7 @@ pub fn draw<'a, I, U, V>(context: &Context, framebuffer: Option<&FramebufferAtta
                 }
 
                 match bind_uniform(&mut ctxt, &mut context.samplers.borrow_mut(),
-                                   value, uniform.location,
+                                   value, program, uniform.location,
                                    &mut active_texture, name)
                 {
                     Ok(_) => (),
@@ -378,7 +379,7 @@ fn bind_uniform_block(ctxt: &mut context::CommandContext, value: &UniformValue,
 
 fn bind_uniform(ctxt: &mut context::CommandContext,
                 samplers: &mut HashMap<SamplerBehavior, SamplerObject>,
-                value: &UniformValue, location: gl::types::GLint,
+                value: &UniformValue, program: &Program, location: gl::types::GLint,
                 active_texture: &mut gl::types::GLenum, name: &str)
                 -> Result<(), DrawError>
 {
@@ -396,6 +397,10 @@ fn bind_uniform(ctxt: &mut context::CommandContext,
             }
         )
     );
+
+    if location >= 0 && program.compare_uniform_state(location as u32, value) {
+        return Ok(());
+    }
 
     match *value {
         UniformValue::Block(_, _) => {
