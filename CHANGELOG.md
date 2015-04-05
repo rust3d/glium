@@ -1,5 +1,9 @@
 # Change Log
 
+## Unreleased
+
+ - Added caching some uniform values in the `Program` struct to avoid calls to `glUniform`.
+
 ## Version 0.2.2 (2015-04-10)
 
  - Added support for backends that don't have vertex array objects (like OpenGL ES 2/WebGL).
