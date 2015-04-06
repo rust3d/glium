@@ -626,7 +626,9 @@ fn bind_texture_uniform(mut ctxt: &mut context::CommandContext,
     }
 
     if ctxt.state.texture_units.len() <= current_texture as usize {
-        ctxt.state.texture_units.resize(current_texture as usize + 1, Default::default());
+        for _ in (ctxt.state.texture_units.len() .. current_texture as usize + 1) {
+            ctxt.state.texture_units.push(Default::default());
+        }
     }
 
     if ctxt.state.texture_units[current_texture as usize].texture != texture ||
